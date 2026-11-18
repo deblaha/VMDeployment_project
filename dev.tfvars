@@ -1,0 +1,10 @@
+environment = "dev"
+location_name = "WestEurope"
+loginname = "deblaha"
+loginpwd = "Sonai@2014"
+bkp_name = "vm-policy"
+rsv_name = "vm-vault"
+snet_prefixes = [ "10.1.1.0/24" ]
+virtutal_network_add_spaces = [ "10.1.0.0/16" ]
+sub_id = "47c374d6-3ed3-456c-886f-b6e3b3771aed"
+virtual_machine_sku = "Standard_D2s_v3"

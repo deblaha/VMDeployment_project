@@ -1,0 +1,148 @@
+trigger:
+- main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  - group: 'MultiInfraVariables'
+
+stages:
+
+  - stage: DEV
+    jobs:
+      - deployment: deployDev
+        displayName: DeploytoDev
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: 'latest'
+                
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    backendServiceArm: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+                    backendAzureRmResourceGroupName: '$(rg_name)'
+                    backendAzureRmStorageAccountName: '$(storageaccountname)'
+                    backendAzureRmContainerName: '$(containername)'
+                    backendAzureRmKey: '$(key)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'plan'
+                    commandOptions: >
+                      -var-file=dev.tfvars
+                      -out=dev.tfplan
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'apply'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    commandOptions: dev.tfplan
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+
+
+  
+  - stage: TEST
+    dependsOn: DEV
+    condition: succeeded()
+    jobs:
+      - deployment: deploytest
+        displayName: DeploytoTest
+        environment: test
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: 'latest'
+                
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    backendServiceArm: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+                    backendAzureRmResourceGroupName: '$(rg_name)'
+                    backendAzureRmStorageAccountName: '$(storageaccountname)'
+                    backendAzureRmContainerName: '$(containername)'
+                    backendAzureRmKey: '$(key)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'plan'
+                    commandOptions: >
+                      -var-file=test.tfvars
+                      -out=test.tfplan
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'apply'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    commandOptions: test.tfplan
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+
+
+
+
+  - stage: PROD
+    dependsOn: TEST
+    condition: succeeded()
+    jobs:
+      - deployment: deployProd
+        displayName: DeploytoProd
+        environment: prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - task: TerraformInstaller@1
+                  inputs:
+                    terraformVersion: 'latest'
+                
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'init'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    backendServiceArm: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+                    backendAzureRmResourceGroupName: '$(rg_name)'
+                    backendAzureRmStorageAccountName: '$(storageaccountname)'
+                    backendAzureRmContainerName: '$(containername)'
+                    backendAzureRmKey: '$(key)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'plan'
+                    commandOptions: >
+                      -var-file=prod.tfvars
+                      -out=prod.tfplan
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
+
+                - task: TerraformTask@5
+                  inputs:
+                    provider: 'azurerm'
+                    command: 'apply'
+                    workingDirectory: '$(System.DefaultWorkingDirectory)'
+                    commandOptions: prod.tfplan
+                    environmentServiceNameAzureRM: 'Azure subscription 1(47c374d6-3ed3-456c-886f-b6e3b3771aed)'
